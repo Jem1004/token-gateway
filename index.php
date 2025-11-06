@@ -64,45 +64,30 @@ $nonce = bin2hex(random_bytes(16));
     <div class="container no-context-menu">
         <div class="text-center">
             <img src="smpn3.png" alt="Logo SMPN3" class="school-logo no-context-menu" oncontextmenu="return false;" ondragstart="return false;">
-            <h1 class="no-select">Portal Akses Ujian Resmi</h1>
-            <p class="text-muted no-select">Sistem Ujian Online SMP Negeri 3</p>
-        </div>
-
-        <!-- Security Notice -->
-        <div class="admin-section" style="background: linear-gradient(135deg, #fef3c7 0%, #fef9c3 100%); border: 2px solid #f59e0b; margin-bottom: 2rem;">
-            <h3 style="color: #92400e; text-align: center; margin-bottom: 1rem;">
-                <span style="margin-right: 0.5rem;">⚠️</span>
-                Pemberitahuan Keamanan
-            </h3>
-            <ul style="color: #92400e; font-size: 0.875rem; line-height: 1.6; margin: 0; padding-left: 1.5rem;">
-                <li><strong>Token bersifat rahasia</strong> dan hanya diberikan oleh pengawas ujian</li>
-                <li><strong>Token hanya berlaku sekali</strong> untuk mencegah penyalahgunaan</li>
-                <li><strong>Setiap aktivitas dicatat</strong> untuk keamanan sistem</li>
-                <li><strong>Akses tidak sah akan diproses</strong> sesuai peraturan sekolah</li>
-            </ul>
+            <h1 class="no-select">Portal Ujian</h1>
+            <p class="text-muted no-select" style="margin-bottom: 2rem;">SMP Negeri 3 Penajam Paser Utara</p>
         </div>
 
         <?php
         // Sanitize error parameter to prevent XSS
         if (isset($_GET['error']) && htmlspecialchars($_GET['error'], ENT_QUOTES, 'UTF-8') === '1'):
         ?>
-            <div class="message message-error">
-                ❌ Token tidak valid atau telah digunakan. Silakan hubungi pengawas ujian.
+            <div class="message message-error" style="margin-bottom: 2rem;">
+                Token tidak valid. Hubungi pengawas ujian.
             </div>
         <?php endif; ?>
 
         <form method="POST" action="validate.php" id="examForm">
             <div class="form-group">
                 <label for="token" class="no-select">
-                    <span style="margin-right: 0.5rem;">🔑</span>
-                    Token Akses Ujian
+                    Token Akses
                 </label>
                 <input
                     type="text"
                     id="token"
                     name="token"
                     required
-                    placeholder="Masukkan token dari pengawas ujian"
+                    placeholder="Masukkan token akses"
                     autocomplete="one-time-code"
                     maxlength="50"
                     pattern="[A-Za-z0-9\-_]+"
@@ -115,46 +100,12 @@ $nonce = bin2hex(random_bytes(16));
                 >
             </div>
             <button type="submit" class="btn" id="submitBtn">
-                <span style="margin-right: 0.5rem;">🚀</span>
-                Masuk ke Ujian
+                Masuk
             </button>
         </form>
 
-        <!-- Important Information -->
-        <div class="admin-section" style="background: linear-gradient(135deg, var(--green-50) 0%, var(--white) 100%); border: 2px solid var(--green-200);">
-            <h3 style="color: var(--green-700); text-align: center; margin-bottom: 1rem;">
-                <span style="margin-right: 0.5rem;">ℹ️</span>
-                Informasi Penting
-            </h3>
-            <div style="color: var(--green-700); font-size: 0.875rem; line-height: 1.6;">
-                <p><strong>👮‍♂️ Token diberikan langsung oleh:</strong></p>
-                <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
-                    <li>Pengawas ujian yang bertugas</li>
-                    <li>Guru mata pelajaran yang bersangkutan</li>
-                    <li>Tim IT sekolah yang berwenang</li>
-                </ul>
-                <p style="margin-top: 1rem;"><strong>🔒 Keamanan Anda adalah prioritas kami:</strong></p>
-                <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
-                    <li>Jangan bagikan token kepada siapa pun</li>
-                    <li>Gunakan token hanya untuk diri sendiri</li>
-                    <li>Hubungi pengawas jika mengalami masalah</li>
-                </ul>
-                <p style="margin-top: 1rem; text-align: center; font-weight: 600;">
-                    ⚠️ <strong>Sistem dilindungi dengan teknologi keamanan modern</strong>
-                </p>
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="text-center" style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--gray-200);">
-            <p class="text-muted no-select" style="font-size: 0.75rem;">
-                © 2024 SMP Negeri 3 - Sistem Ujian Online Aman & Terpercaya
-            </p>
-            <p class="text-muted no-select" style="font-size: 0.7rem; margin-top: 0.25rem;">
-                Dilindungi oleh sistem keamanan berlapis | ID Sesi: <?php echo session_id(); ?>
-            </p>
-        </div>
-    </div>
+        
+      </div>
 
     <!-- Security Scripts with nonce -->
     <script nonce="<?php echo $nonce; ?>">
