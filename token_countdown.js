@@ -66,18 +66,32 @@ class TokenCountdown {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Invalid response format');
+            }
+
             const data = await response.json();
 
             if (data.success) {
                 this.tokenData = data;
                 this.updateDisplay();
+                this.hideError();
             } else {
                 console.error('API Error:', data.message);
-                this.showError('Gagal memuat data token');
+                this.showError('Gagal memuat data token: ' + (data.message || 'Unknown error'));
+                // Enable fallback mode with existing data if available
+                if (!this.tokenData) {
+                    this.enableFallbackMode();
+                }
             }
         } catch (error) {
             console.error('Refresh Error:', error);
-            this.showError('Koneksi error. Coba lagi nanti.');
+            this.showError('Koneksi error. Coba lagi nanti. (' + error.message + ')');
+            // Enable fallback mode if no data exists
+            if (!this.tokenData) {
+                this.enableFallbackMode();
+            }
         }
     }
 
@@ -263,6 +277,34 @@ class TokenCountdown {
             errorElement.textContent = message;
             errorElement.style.display = 'block';
         }
+    }
+
+    hideError() {
+        const errorElement = document.getElementById('countdownError');
+        if (errorElement) {
+            errorElement.style.display = 'none';
+        }
+    }
+
+    enableFallbackMode() {
+        console.log('Enabling fallback mode with default timer');
+        // Create fallback data for 15-minute rotation
+        const now = new Date();
+        const nextRotation = new Date(now.getTime() + 15 * 60 * 1000);
+
+        this.tokenData = {
+            success: true,
+            current_token: 'SYSTEM',
+            rotation_interval: 15,
+            auto_rotation_enabled: true,
+            next_rotation_time: nextRotation.toISOString(),
+            time_until_rotation: 15 * 60,
+            last_rotation_time: now.toISOString(),
+            updated_at: now.toISOString()
+        };
+
+        this.updateDisplay();
+        this.showError('Mode fallback: Timer 15 menit default diaktifkan');
     }
 
     destroy() {

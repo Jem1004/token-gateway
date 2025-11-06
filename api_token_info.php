@@ -29,27 +29,42 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 }
 
 // Get token information
-$tokenInfo = getTokenInfo();
-
-if ($tokenInfo['success']) {
-    // Format dates for better readability
-    if ($tokenInfo['last_rotation_time']) {
-        $tokenInfo['last_rotation_time_formatted'] = date('d M Y H:i:s', strtotime($tokenInfo['last_rotation_time']));
-    }
-    if ($tokenInfo['next_rotation_time']) {
-        $tokenInfo['next_rotation_time_formatted'] = date('d M Y H:i:s', strtotime($tokenInfo['next_rotation_time']));
+try {
+    // Check if database connection works
+    $conn = getDbConnection();
+    if (!$conn) {
+        throw new Exception("Database connection failed");
     }
 
-    // Add server timestamp
-    $tokenInfo['server_timestamp'] = date('Y-m-d H:i:s');
-    $tokenInfo['server_timezone'] = date_default_timezone_get();
+    $tokenInfo = getTokenInfo();
 
-    echo json_encode($tokenInfo);
-} else {
+    if ($tokenInfo['success']) {
+        // Format dates for better readability
+        if ($tokenInfo['last_rotation_time']) {
+            $tokenInfo['last_rotation_time_formatted'] = date('d M Y H:i:s', strtotime($tokenInfo['last_rotation_time']));
+        }
+        if ($tokenInfo['next_rotation_time']) {
+            $tokenInfo['next_rotation_time_formatted'] = date('d M Y H:i:s', strtotime($tokenInfo['next_rotation_time']));
+        }
+
+        // Add server timestamp
+        $tokenInfo['server_timestamp'] = date('Y-m-d H:i:s');
+        $tokenInfo['server_timezone'] = date_default_timezone_get();
+
+        echo json_encode($tokenInfo);
+    } else {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => $tokenInfo['message'] ?? 'Unknown error'
+        ]);
+    }
+} catch (Exception $e) {
+    error_log("API Error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => $tokenInfo['message'] ?? 'Unknown error'
+        'message' => $e->getMessage()
     ]);
 }
 ?>

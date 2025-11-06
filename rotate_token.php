@@ -22,13 +22,27 @@ require_once 'config.php';
  * @return string Generated token
  */
 function generateToken($length = 6): string {
+    // Validate parameter
+    $length = (int)$length;
+    if ($length < 1 || $length > 10) {
+        $length = 6; // Fallback to safe default
+    }
+
     $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     $charactersLength = strlen($characters);
     $token = '';
 
-    // Use random_int for cryptographically secure random generation
-    for ($i = 0; $i < $length; $i++) {
-        $token .= $characters[random_int(0, $charactersLength - 1)];
+    try {
+        // Use random_int for cryptographically secure random generation
+        for ($i = 0; $i < $length; $i++) {
+            $token .= $characters[random_int(0, $charactersLength - 1)];
+        }
+    } catch (Exception $e) {
+        // Fallback to less secure method if random_int fails
+        error_log("Random generation failed, using fallback: " . $e->getMessage());
+        for ($i = 0; $i < $length; $i++) {
+            $token .= $characters[mt_rand(0, $charactersLength - 1)];
+        }
     }
 
     return $token;
@@ -47,13 +61,22 @@ function rotateToken($rotationType = 'manual', $rotatedBy = 'system'): array {
     try {
         // Get database connection
         $conn = getDbConnection();
+        if (!$conn) {
+            throw new Exception("Database connection failed");
+        }
 
         // Begin transaction
         $conn->begin_transaction();
 
         // Check if timer columns exist
-        $checkColumns = $conn->query("SHOW COLUMNS FROM active_token LIKE 'token_rotation_interval'");
-        $hasTimerColumns = $checkColumns->num_rows > 0;
+        try {
+            $checkColumns = $conn->query("SHOW COLUMNS FROM active_token LIKE 'token_rotation_interval'");
+            $hasTimerColumns = $checkColumns && $checkColumns->num_rows > 0;
+        } catch (Exception $e) {
+            // If query fails, assume no timer columns
+            $hasTimerColumns = false;
+            error_log("Column check failed, assuming no timer columns: " . $e->getMessage());
+        }
 
         if ($hasTimerColumns) {
             // Migrated database - use full timer functionality
@@ -169,7 +192,7 @@ function rotateToken($rotationType = 'manual', $rotatedBy = 'system'): array {
             // Try to add to history if table exists
             try {
                 $checkHistoryTable = $conn->query("SHOW TABLES LIKE 'token_history'");
-                if ($checkHistoryTable->num_rows > 0) {
+                if ($checkHistoryTable && $checkHistoryTable->num_rows > 0) {
                     $stmt = $conn->prepare("
                         INSERT INTO token_history
                         (old_token, new_token, rotation_type, rotated_by, ip_address)
@@ -257,10 +280,18 @@ function rotateToken($rotationType = 'manual', $rotatedBy = 'system'): array {
 function getTokenInfo(): array {
     try {
         $conn = getDbConnection();
+        if (!$conn) {
+            throw new Exception("Database connection failed");
+        }
 
         // Check if timer columns exist
-        $checkColumns = $conn->query("SHOW COLUMNS FROM active_token LIKE 'token_rotation_interval'");
-        $hasTimerColumns = $checkColumns->num_rows > 0;
+        try {
+            $checkColumns = $conn->query("SHOW COLUMNS FROM active_token LIKE 'token_rotation_interval'");
+            $hasTimerColumns = $checkColumns && $checkColumns->num_rows > 0;
+        } catch (Exception $e) {
+            $hasTimerColumns = false;
+            error_log("Column check failed in getTokenInfo: " . $e->getMessage());
+        }
 
         if ($hasTimerColumns) {
             // Migrated database - get all timer info

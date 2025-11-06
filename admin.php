@@ -68,11 +68,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && htmlspec
     }
 
     // Execute token rotation logic
-    require_once 'rotate_token.php';
-    $result = rotateToken('manual', $_SESSION['admin_username']);
+    try {
+        require_once 'rotate_token.php';
 
-    // Store message in session for display after redirect
-    if ($result['success']) {
+        // Verify database connection first
+        $conn = getDbConnection();
+        if (!$conn) {
+            throw new Exception("Database connection failed");
+        }
+        $conn->close();
+
+        $result = rotateToken('manual', $_SESSION['admin_username']);
+
+        // Store message in session for display after redirect
+        if ($result['success']) {
         $nextRotation = isset($result['next_rotation']) ?
             date('d M Y H:i:s', strtotime($result['next_rotation'])) :
             'Tidak diketahui';
@@ -86,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && htmlspec
         // Don't expose detailed error messages to prevent information disclosure
         $_SESSION['rotation_error'] = "Gagal memperbarui token. Silakan coba lagi.";
         // Log detailed error for debugging
-        error_log("Token rotation failed: " . $result['message']);
+        error_log("Token rotation failed: " . ($result['message'] ?? 'Unknown error'));
     }
 
     // Redirect to prevent form resubmission
