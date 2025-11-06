@@ -29,14 +29,14 @@ USE token_gate_db;
 -- This table stores only ONE active token at any time (single row design)
 CREATE TABLE IF NOT EXISTS active_token (
     id INT PRIMARY KEY AUTO_INCREMENT COMMENT 'Primary key, always value 1',
-    current_token VARCHAR(50) NOT NULL COMMENT 'Currently valid access token',
+    current_token VARCHAR(6) NOT NULL COMMENT 'Currently valid 6-character access token',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Record creation timestamp',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last token update timestamp'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Insert the initial token
 -- This creates the single row that will be updated by token rotation
-INSERT INTO active_token (id, current_token) VALUES (1, 'INITIAL00')
+INSERT INTO active_token (id, current_token) VALUES (1, 'ABCXYZ')
 ON DUPLICATE KEY UPDATE current_token = current_token;
 
 -- Verify the setup

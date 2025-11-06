@@ -23,20 +23,20 @@ ADD COLUMN auto_rotation_enabled BOOLEAN DEFAULT TRUE COMMENT 'Enable/disable au
 -- Create token_history table for tracking rotation history
 CREATE TABLE IF NOT EXISTS token_history (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    old_token VARCHAR(50) NOT NULL COMMENT 'Previous token value',
-    new_token VARCHAR(50) NOT NULL COMMENT 'New token value',
+    old_token VARCHAR(6) NOT NULL COMMENT 'Previous 6-character token value',
+    new_token VARCHAR(6) NOT NULL COMMENT 'New 6-character token value',
     rotation_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'When rotation occurred',
     rotation_type ENUM('manual', 'auto') DEFAULT 'manual' COMMENT 'How rotation was triggered',
     rotated_by VARCHAR(50) COMMENT 'Username who initiated rotation (manual only)',
     ip_address VARCHAR(45) COMMENT 'IP address of rotation initiator'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Update existing record with default timer values
+-- Update existing record with default timer values (15 minutes)
 UPDATE active_token SET
-    token_expiry_minutes = 60,
-    token_rotation_interval = 60,
+    token_expiry_minutes = 15,
+    token_rotation_interval = 15,
     auto_rotation_enabled = TRUE,
-    next_rotation_time = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 60 MINUTE)
+    next_rotation_time = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 15 MINUTE)
 WHERE id = 1;
 
 -- Create indexes for better performance

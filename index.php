@@ -89,14 +89,17 @@ $nonce = bin2hex(random_bytes(16));
                     required
                     placeholder="Masukkan token akses"
                     autocomplete="one-time-code"
-                    maxlength="50"
-                    pattern="[A-Za-z0-9\-_]+"
-                    title="Token hanya boleh mengandung huruf, angka, strip, dan garis bawah"
+                    maxlength="6"
+                    pattern="[A-Z]{6}"
+                    title="Token harus 6 huruf besar (contoh: ABCDEF)"
                     class="no-context-menu"
+                    style="text-transform: uppercase;"
                     oncopy="return false;"
                     onpaste="return false;"
                     oncut="return false;"
                     oncontextmenu="return false;"
+                    oninput="this.value = this.value.toUpperCase()"
+                    onkeydown="return /[a-zA-Z]/.test(event.key) || event.key === 'Backspace' || event.key === 'Delete' || event.key === 'Tab';"
                 >
             </div>
             <button type="submit" class="btn" id="submitBtn">
