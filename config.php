@@ -11,11 +11,11 @@
 $db_host = 'localhost';
 $db_name = 'token_gate_db';
 $db_user = 'root';
-$db_pass = '';
+$db_pass = 'wCvTiLwLrN6QefFvKHghIivSyma';
 
 // Exam URL Configuration
 // This is the actual exam URL that students will be redirected to after successful token validation
-$exam_url = 'http://www.xxxxx.sch.id';
+$exam_url = 'https://pribadi.smpn3ppu.sch.id/heisiswasmpn3kamuharusjujurdalamujian/public/login/index.php';
 
 /**
  * Get Database Connection

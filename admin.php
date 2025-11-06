@@ -19,7 +19,7 @@ require_once 'config.php';
 // Hardcoded admin credentials (as per requirements)
 // In production, these should be hashed and stored securely
 define('ADMIN_USERNAME', 'admin');
-define('ADMIN_PASSWORD', 'admin123');
+define('ADMIN_PASSWORD', 'indonesia2025');
 
 // Handle logout action
 if (isset($_GET['action']) && htmlspecialchars($_GET['action'], ENT_QUOTES, 'UTF-8') === 'logout') {
@@ -66,21 +66,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && htmlspec
         header("Location: admin.php");
         exit();
     }
-    
+
     // Execute token rotation logic
     require_once 'rotate_token.php';
-    $result = rotateToken();
-    
+    $result = rotateToken('manual', $_SESSION['admin_username']);
+
     // Store message in session for display after redirect
     if ($result['success']) {
-        $_SESSION['rotation_message'] = "Token berhasil diperbarui. Token baru: " . htmlspecialchars($result['token'], ENT_QUOTES, 'UTF-8');
+        $nextRotation = isset($result['next_rotation']) ?
+            date('d M Y H:i:s', strtotime($result['next_rotation'])) :
+            'Tidak diketahui';
+
+        $_SESSION['rotation_message'] = sprintf(
+            "Token berhasil diperbarui. Token baru: <strong>%s</strong><br>Rotasi berikutnya: <strong>%s</strong>",
+            htmlspecialchars($result['token'], ENT_QUOTES, 'UTF-8'),
+            $nextRotation
+        );
     } else {
         // Don't expose detailed error messages to prevent information disclosure
         $_SESSION['rotation_error'] = "Gagal memperbarui token. Silakan coba lagi.";
         // Log detailed error for debugging
         error_log("Token rotation failed: " . $result['message']);
     }
-    
+
     // Redirect to prevent form resubmission
     header("Location: admin.php");
     exit();
@@ -134,79 +142,232 @@ if ($is_authenticated) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - Token Gate</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <script src="token_countdown.js" defer></script>
 </head>
 <body>
-    <div class="container">
+    <div class="container container--admin">
         <?php if (!$is_authenticated): ?>
             <!-- Login Form -->
-            <h1>Admin Panel</h1>
-            <p>Silakan login untuk mengakses panel administrasi</p>
-            
+            <div class="text-center">
+                <div style="font-size: 4rem; margin-bottom: 1rem; color: var(--green-600);">🔐</div>
+                <h1>Admin Panel</h1>
+                <p class="text-muted">Silakan login untuk mengakses panel administrasi</p>
+            </div>
+
             <?php if (isset($login_error)): ?>
-                <div class="error-message">
+                <div class="message message-error">
                     <?php echo $login_error; ?>
                 </div>
             <?php endif; ?>
-            
+
             <form method="POST" action="admin.php">
                 <input type="hidden" name="action" value="login">
-                
+
                 <div class="form-group">
-                    <label for="username">Username:</label>
-                    <input type="text" id="username" name="username" required placeholder="Masukkan username">
+                    <label for="username">
+                        <span style="margin-right: 0.5rem;">👤</span>
+                        Username
+                    </label>
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        required
+                        placeholder="Masukkan username admin"
+                        autocomplete="username"
+                        maxlength="50"
+                    >
                 </div>
-                
+
                 <div class="form-group">
-                    <label for="password">Password:</label>
-                    <input type="password" id="password" name="password" required placeholder="Masukkan password">
+                    <label for="password">
+                        <span style="margin-right: 0.5rem;">🔒</span>
+                        Password
+                    </label>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        required
+                        placeholder="Masukkan password admin"
+                        autocomplete="current-password"
+                    >
                 </div>
-                
-                <button type="submit">Login</button>
+
+                <button type="submit" class="btn">
+                    <span style="margin-right: 0.5rem;">🚀</span>
+                    Login ke Dashboard
+                </button>
             </form>
         <?php else: ?>
             <!-- Admin Dashboard -->
             <div class="admin-header">
-                <h1>Admin Panel - Token Management</h1>
-                <a href="admin.php?action=logout" class="logout-btn">Logout</a>
+                <div>
+                    <h1>🛡️ Admin Dashboard</h1>
+                    <div class="user-info">
+                        Selamat datang kembali, <strong><?php echo htmlspecialchars($_SESSION['admin_username']); ?></strong>!
+                    </div>
+                </div>
+                <a href="admin.php?action=logout" class="logout-btn">Keluar</a>
             </div>
-            
-            <p>Selamat datang, <?php echo htmlspecialchars($_SESSION['admin_username']); ?>!</p>
-            
+
+            <!-- Dashboard Statistics -->
+            <div class="admin-stats">
+                <div class="stat-card">
+                    <div class="stat-value">🔑</div>
+                    <div class="stat-label">Token Management</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">✅</div>
+                    <div class="stat-label">System Active</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">📊</div>
+                    <div class="stat-label">Real-time Status</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">🔒</div>
+                    <div class="stat-label">Security Enabled</div>
+                </div>
+            </div>
+
             <?php if ($rotation_message): ?>
-                <div class="success-message">
+                <div class="message message-success success-animation">
                     <?php echo $rotation_message; ?>
                 </div>
             <?php endif; ?>
-            
+
             <?php if ($rotation_error): ?>
-                <div class="error-message">
+                <div class="message message-error">
                     <?php echo $rotation_error; ?>
                 </div>
             <?php endif; ?>
-            
+
             <?php if (isset($db_error)): ?>
-                <div class="error-message">
+                <div class="message message-error">
                     <?php echo $db_error; ?>
                 </div>
             <?php endif; ?>
-            
-            <div class="token-display">
-                <h2>Token Aktif Saat Ini</h2>
+
+            <!-- Countdown Timer Section -->
+            <div class="countdown-container" id="countdownContainer">
+                <div class="countdown-header">
+                    <div class="countdown-title">
+                        <span style="font-size: 1.5rem;">⏱️</span>
+                        Countdown Token Rotation
+                    </div>
+                    <div class="countdown-status countdown-status--active" id="countdownStatus">
+                        Aktif
+                    </div>
+                </div>
+
+                <div class="countdown-display">
+                    <div class="countdown-item">
+                        <div class="countdown-value" id="countdown-days">00</div>
+                        <div class="countdown-label">Hari</div>
+                    </div>
+                    <div class="countdown-item">
+                        <div class="countdown-value" id="countdown-hours">00</div>
+                        <div class="countdown-label">Jam</div>
+                    </div>
+                    <div class="countdown-item">
+                        <div class="countdown-value" id="countdown-minutes">00</div>
+                        <div class="countdown-label">Menit</div>
+                    </div>
+                    <div class="countdown-item">
+                        <div class="countdown-value" id="countdown-seconds">00</div>
+                        <div class="countdown-label">Detik</div>
+                    </div>
+                </div>
+
+                <div class="countdown-progress">
+                    <div class="countdown-progress-bar" id="countdownProgress" style="width: 100%;"></div>
+                </div>
+
+                <div class="countdown-info">
+                    <div class="countdown-info-item">
+                        <span class="countdown-info-label">🔄 Rotasi Terakhir:</span>
+                        <span class="countdown-info-value" id="lastRotationTime">Memuat...</span>
+                    </div>
+                    <div class="countdown-info-item">
+                        <span class="countdown-info-label">⏰ Rotasi Berikutnya:</span>
+                        <span class="countdown-info-value" id="nextRotationTime">Memuat...</span>
+                    </div>
+                    <div class="countdown-info-item">
+                        <span class="countdown-info-label">📊 Interval Rotasi:</span>
+                        <span class="countdown-info-value" id="rotationInterval">Memuat...</span>
+                    </div>
+                    <div class="countdown-info-item">
+                        <span class="countdown-info-label">🤖 Auto-Rotation:</span>
+                        <span class="countdown-info-value" id="autoRotationStatus">Memuat...</span>
+                    </div>
+                </div>
+
+                <div class="message message-error" id="countdownError" style="display: none;"></div>
+
+                <div style="text-align: center; margin-top: 1rem;">
+                    <button type="button" id="refreshTokenBtn" class="btn btn--secondary btn--sm">
+                        🔄 Refresh Data
+                    </button>
+                </div>
+            </div>
+
+            <div class="admin-section token-display">
+                <h2>
+                    <span style="margin-right: 0.5rem;">🔑</span>
+                    Token Aktif Saat Ini
+                </h2>
                 <?php if ($current_token): ?>
-                    <div class="current-token">
+                    <div class="current-token" id="currentToken">
                         <?php echo htmlspecialchars($current_token); ?>
                     </div>
+                    <p class="text-muted" style="margin-top: 1rem; font-size: 0.875rem;">
+                        ⚠️ Token ini sedang aktif dan dapat digunakan oleh siswa untuk mengakses ujian.
+                    </p>
                 <?php else: ?>
-                    <p class="error-message">Token tidak ditemukan</p>
+                    <div class="message message-error">
+                        Token tidak ditemukan dalam database. Silakan buat token baru.
+                    </div>
                 <?php endif; ?>
             </div>
-            
-            <div class="token-actions">
-                <h2>Manajemen Token</h2>
+
+            <div class="admin-section token-actions">
+                <h2>
+                    <span style="margin-right: 0.5rem;">⚙️</span>
+                    Manajemen Token
+                </h2>
                 <form method="POST" action="admin.php">
                     <input type="hidden" name="action" value="rotate_token">
-                    <button type="submit" class="rotate-btn">Buat Token Baru (Manual)</button>
+                    <button type="submit" class="btn btn-rotate btn--lg">
+                        Buat Token Baru (Manual)
+                    </button>
                 </form>
+                <p class="text-muted" style="margin-top: 1rem; font-size: 0.875rem;">
+                    💡 Membuat token baru akan secara otomatis menonaktifkan token sebelumnya.
+                </p>
+            </div>
+
+            <div class="admin-section">
+                <h2>
+                    <span style="margin-right: 0.5rem;">📋</span>
+                    Quick Actions
+                </h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    <button class="btn btn--secondary btn--sm" disabled>
+                        📈 View Statistics
+                    </button>
+                    <button class="btn btn--secondary btn--sm" disabled>
+                        🕐 View History
+                    </button>
+                    <button class="btn btn--secondary btn--sm" disabled>
+                        ⚙️ Settings
+                    </button>
+                </div>
+                <p class="text-muted" style="margin-top: 1rem; font-size: 0.875rem;">
+                    Fitur tambahan akan segera hadir untuk monitoring dan analisis yang lebih lengkap.
+                </p>
             </div>
         <?php endif; ?>
     </div>
