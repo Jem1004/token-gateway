@@ -1,0 +1,431 @@
+/**
+ * Token Gate Application - Stylesheet
+ * 
+ * This stylesheet provides styling for both the student portal and admin panel.
+ * Features include:
+ * - Centered layout for forms
+ * - Clear, accessible input fields
+ * - Error and success message styling
+ * - Professional admin panel layout
+ * - Button styles with hover states
+ * - Responsive design for mobile devices
+ */
+
+/* ===========================
+   Global Styles & Reset
+   =========================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    line-height: 1.6;
+    color: #333;
+}
+
+/* ===========================
+   Container & Layout
+   =========================== */
+
+.container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    padding: 40px;
+    max-width: 500px;
+    width: 100%;
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===========================
+   Typography
+   =========================== */
+
+h1 {
+    color: #2d3748;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+h2 {
+    color: #2d3748;
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    margin-top: 24px;
+}
+
+p {
+    color: #4a5568;
+    font-size: 15px;
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+/* ===========================
+   Form Styles
+   =========================== */
+
+form {
+    margin-top: 24px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    color: #2d3748;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+input[type="text"],
+input[type="password"] {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 15px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    background-color: #f7fafc;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+    outline: none;
+    border-color: #667eea;
+    background-color: white;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+input[type="text"]::placeholder,
+input[type="password"]::placeholder {
+    color: #a0aec0;
+}
+
+/* ===========================
+   Button Styles
+   =========================== */
+
+button {
+    width: 100%;
+    padding: 14px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    color: white;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 8px;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+button:disabled {
+    background: #cbd5e0;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ===========================
+   Message Styles
+   =========================== */
+
+.error-message {
+    background-color: #fed7d7;
+    color: #c53030;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border-left: 4px solid #c53030;
+    margin-bottom: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    animation: slideIn 0.3s ease-out;
+}
+
+.success-message {
+    background-color: #c6f6d5;
+    color: #2f855a;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border-left: 4px solid #2f855a;
+    margin-bottom: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* ===========================
+   Admin Panel Specific Styles
+   =========================== */
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.admin-header h1 {
+    margin-bottom: 0;
+    text-align: left;
+    font-size: 24px;
+}
+
+.logout-btn {
+    padding: 8px 20px;
+    background-color: #e53e3e;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+    background-color: #c53030;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
+}
+
+.token-display {
+    background-color: #f7fafc;
+    padding: 24px;
+    border-radius: 8px;
+    border: 2px solid #e2e8f0;
+    margin-top: 24px;
+}
+
+.token-display h2 {
+    margin-top: 0;
+    font-size: 18px;
+}
+
+.current-token {
+    background-color: white;
+    padding: 16px 20px;
+    border-radius: 6px;
+    border: 2px solid #667eea;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-align: center;
+    color: #667eea;
+    font-family: 'Courier New', monospace;
+    margin-top: 12px;
+}
+
+.token-actions {
+    margin-top: 24px;
+    padding: 24px;
+    background-color: #f7fafc;
+    border-radius: 8px;
+    border: 2px solid #e2e8f0;
+}
+
+.token-actions h2 {
+    margin-top: 0;
+    font-size: 18px;
+}
+
+.rotate-btn {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    margin-top: 12px;
+}
+
+.rotate-btn:hover {
+    box-shadow: 0 6px 20px rgba(72, 187, 120, 0.4);
+}
+
+/* ===========================
+   Responsive Design
+   =========================== */
+
+/* Tablet devices (768px and below) */
+@media (max-width: 768px) {
+    .container {
+        padding: 32px 24px;
+        max-width: 100%;
+    }
+    
+    h1 {
+        font-size: 24px;
+    }
+    
+    h2 {
+        font-size: 18px;
+    }
+    
+    .admin-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .admin-header h1 {
+        font-size: 20px;
+    }
+    
+    .logout-btn {
+        align-self: flex-end;
+    }
+    
+    .current-token {
+        font-size: 20px;
+        letter-spacing: 2px;
+        padding: 14px 16px;
+    }
+}
+
+/* Mobile devices (480px and below) */
+@media (max-width: 480px) {
+    body {
+        padding: 12px;
+    }
+    
+    .container {
+        padding: 24px 20px;
+        border-radius: 8px;
+    }
+    
+    h1 {
+        font-size: 22px;
+    }
+    
+    h2 {
+        font-size: 16px;
+    }
+    
+    p {
+        font-size: 14px;
+    }
+    
+    input[type="text"],
+    input[type="password"] {
+        padding: 10px 14px;
+        font-size: 14px;
+    }
+    
+    button {
+        padding: 12px 20px;
+        font-size: 15px;
+    }
+    
+    .token-display,
+    .token-actions {
+        padding: 16px;
+    }
+    
+    .current-token {
+        font-size: 18px;
+        letter-spacing: 1px;
+        padding: 12px 14px;
+    }
+    
+    .admin-header h1 {
+        font-size: 18px;
+    }
+    
+    .logout-btn {
+        padding: 6px 16px;
+        font-size: 13px;
+    }
+}
+
+/* Small mobile devices (360px and below) */
+@media (max-width: 360px) {
+    .container {
+        padding: 20px 16px;
+    }
+    
+    h1 {
+        font-size: 20px;
+    }
+    
+    .current-token {
+        font-size: 16px;
+        word-break: break-all;
+    }
+}
+
+/* ===========================
+   Accessibility Enhancements
+   =========================== */
+
+/* Focus visible for keyboard navigation */
+button:focus-visible,
+input:focus-visible,
+a:focus-visible {
+    outline: 3px solid #667eea;
+    outline-offset: 2px;
+}
+
+/* Reduced motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .container {
+        border: 2px solid #000;
+    }
+    
+    input[type="text"],
+    input[type="password"] {
+        border: 2px solid #000;
+    }
+}
