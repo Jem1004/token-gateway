@@ -79,26 +79,33 @@ try {
     $result = $stmt->fetch();
 
     if (!$result) {
+        $db_error = true;
+        $error_message = "Data token tidak ditemukan. Silakan import database.sql terlebih dahulu.";
         $current_token = 'ERROR';
         $last_rotated = 'N/A';
+        $sisaDetik = 0;
     } else {
         $current_token = htmlspecialchars($result['current_token']);
         $last_rotated = $result['last_rotated'];
-    }
 
-    // Hitung sisa detik hingga rotasi berikutnya
-    $lastRotated = new DateTime($last_rotated);
-    $nextRotation = clone $lastRotated;
-    $nextRotation->modify('+' . TOKEN_ROTATION_MINUTES . ' minutes');
+        // Hitung sisa detik hingga rotasi berikutnya
+        $lastRotated = new DateTime($last_rotated);
+        $nextRotation = clone $lastRotated;
+        $nextRotation->modify('+' . TOKEN_ROTATION_MINUTES . ' minutes');
 
-    $now = new DateTime();
-    $sisaDetik = $nextRotation->getTimestamp() - $now->getTimestamp();
+        $now = new DateTime();
+        $sisaDetik = $nextRotation->getTimestamp() - $now->getTimestamp();
 
-    if ($sisaDetik < 0) {
-        $sisaDetik = 0; // Jika cron terlambat
+        if ($sisaDetik < 0) {
+            $sisaDetik = 0; // Jika cron terlambat
+        }
+
+        $db_error = false;
     }
 
 } catch (PDOException $e) {
+    $db_error = true;
+    $error_message = "Error database: " . $e->getMessage() . "<br><br><strong>Solusi:</strong> <a href='test_db_connection.php' target='_blank'>Test koneksi database</a>";
     $current_token = 'DB ERROR';
     $last_rotated = 'N/A';
     $sisaDetik = 0;
@@ -119,6 +126,17 @@ try {
                 <h1>Admin Panel - Token Gate</h1>
                 <a href="?logout=1" class="logout-btn">Logout</a>
             </div>
+
+            <?php if (isset($db_error) && $db_error): ?>
+                <div class="error-message" style="margin-bottom: 20px;">
+                    <?php echo $error_message; ?>
+                </div>
+                <div style="text-align: center; margin: 20px 0;">
+                    <a href="test_db_connection.php" target="_blank" class="action-btn" style="display: inline-block; text-decoration: none;">
+                        Test Koneksi Database
+                    </a>
+                </div>
+            <?php endif; ?>
 
             <div class="token-info">
                 <h2>Token Aktif Saat Ini:</h2>
