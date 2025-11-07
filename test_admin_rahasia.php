@@ -16,13 +16,21 @@ if (file_exists('admin-rahasia.php')) {
     echo "❌ admin-rahasia.php NOT found<br>";
 }
 
-// Test 2: Basic PHP syntax
+// Test 2: Basic PHP syntax (tanpa shell_exec)
 echo "<h2>2. PHP Syntax Test</h2>";
-$output = shell_exec('php -l admin-rahasia.php 2>&1');
-if (strpos($output, 'No syntax errors') !== false) {
-    echo "✅ PHP syntax OK<br>";
-} else {
-    echo "❌ PHP syntax error: " . htmlspecialchars($output) . "<br>";
+try {
+    // Coba include file untuk test syntax
+    include_once 'admin-rahasia.php';
+    echo "✅ PHP syntax OK (include successful)<br>";
+} catch (ParseError $e) {
+    echo "❌ PHP Parse Error: " . htmlspecialchars($e->getMessage()) . "<br>";
+    echo "Line: " . $e->getLine() . "<br>";
+} catch (Error $e) {
+    echo "❌ PHP Fatal Error: " . htmlspecialchars($e->getMessage()) . "<br>";
+    echo "Line: " . $e->getLine() . "<br>";
+} catch (Exception $e) {
+    echo "❌ PHP Exception: " . htmlspecialchars($e->getMessage()) . "<br>";
+    echo "Line: " . $e->getLine() . "<br>";
 }
 
 // Test 3: Session functionality
