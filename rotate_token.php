@@ -1,6 +1,14 @@
 <?php
 require_once 'config.php';
 
+// Prevent any output before JSON
+if (ob_get_length()) ob_clean();
+
+// Error reporting untuk debugging (disable di production)
+error_reporting(E_ALL);
+ini_set('display_errors', 0); // Jangan tampilkan error di output
+ini_set('log_errors', 1);     // Log error ke file log
+
 /**
  * Generate random alphabet token (6 huruf besar)
  * @param int $length Token length
@@ -19,10 +27,12 @@ function generateRandomToken($length = 6) {
 }
 
 // Detect if this is an AJAX request
-$isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
-          strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest' ||
-          isset($_SERVER['HTTP_CONTENT_TYPE']) &&
-          strpos($_SERVER['HTTP_CONTENT_TYPE'], 'application/json') !== false;
+$isAjax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+          strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') ||
+          (isset($_SERVER['HTTP_CONTENT_TYPE']) &&
+          strpos($_SERVER['HTTP_CONTENT_TYPE'], 'application/json') !== false) ||
+          (isset($_SERVER['HTTP_ACCEPT']) &&
+          strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
 
 try {
     // Generate token baru (6 huruf alphabet)
@@ -90,7 +100,7 @@ try {
                     'token' => $new_token,
                     'message' => 'Token berhasil dirotasi',
                     'timestamp' => date(SERVER_TIME_FORMAT),
-    'timezone' => APP_TIMEZONE,
+                    'timezone' => APP_TIMEZONE,
                     'last_rotated' => $saved_data['last_rotated']
                 ]);
             } else {

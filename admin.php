@@ -300,7 +300,7 @@ try {
                                 <?php
                                 $nextRot = new DateTime($last_rotated);
                                 $nextRot->modify('+' . TOKEN_ROTATION_MINUTES . ' minutes');
-                                echo date(DISPLAY_TIME_FORMAT, $nextRot->getTimestamp());
+                                echo $nextRot->format(DISPLAY_TIME_FORMAT);
                                 ?>
                             </span>
                         </div>
