@@ -1,7 +1,7 @@
 <?php
 /**
  * Token Gate Application - Admin Panel
- * 
+ *
  * This script provides an administrative interface for managing access tokens.
  * Features include:
  * - Session-based authentication with hardcoded credentials
@@ -10,11 +10,35 @@
  * - Logout functionality
  */
 
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 0); // Keep display_errors off for security
+ini_set('log_errors', 1);
+
 // Start session for authentication management
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    if (!session_start()) {
+        error_log("Failed to start session in admin.php");
+        die("Session error: Unable to start session");
+    }
+}
 
 // Include configuration file
-require_once 'config.php';
+try {
+    if (!file_exists('config.php')) {
+        throw new Exception("config.php file not found");
+    }
+    require_once 'config.php';
+} catch (Exception $e) {
+    error_log("Configuration error in admin.php: " . $e->getMessage());
+    die("Configuration error: System configuration issue detected");
+}
+
+// Check if required functions exist
+if (!function_exists('getDbConnection')) {
+    error_log("getDbConnection function not available in admin.php");
+    die("System error: Database function not available");
+}
 
 // Hardcoded admin credentials (as per requirements)
 // In production, these should be hashed and stored securely
@@ -71,7 +95,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && htmlspec
     try {
         require_once 'rotate_token.php';
 
+        // Check if rotateToken function exists
+        if (!function_exists('rotateToken')) {
+            throw new Exception("Token rotation function not available");
+        }
+
         // Verify database connection first
+        if (!function_exists('getDbConnection')) {
+            throw new Exception("Database connection function not available");
+        }
+
         $conn = getDbConnection();
         if (!$conn) {
             throw new Exception("Database connection failed");
@@ -82,9 +115,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && htmlspec
 
         // Store message in session for display after redirect
         if ($result['success']) {
-        $nextRotation = isset($result['next_rotation']) ?
-            date('d M Y H:i:s', strtotime($result['next_rotation'])) :
-            'Tidak diketahui';
+            $nextRotation = isset($result['next_rotation']) ?
+                date('d M Y H:i:s', strtotime($result['next_rotation'])) :
+                'Tidak diketahui';
 
         $_SESSION['rotation_message'] = sprintf(
             "Token berhasil diperbarui. Token baru: <strong>%s</strong><br>Rotasi berikutnya: <strong>%s</strong>",
@@ -122,25 +155,36 @@ if (isset($_SESSION['rotation_error'])) {
 $current_token = null;
 if ($is_authenticated) {
     try {
+        // Check if function exists before calling it
+        if (!function_exists('getDbConnection')) {
+            throw new Exception("Database connection function not available");
+        }
+
         $conn = getDbConnection();
+        if (!$conn) {
+            throw new Exception("Failed to connect to database");
+        }
+
         $stmt = $conn->prepare("SELECT current_token FROM active_token WHERE id = 1");
-        
+
         if ($stmt) {
             $stmt->execute();
             $result = $stmt->get_result();
-            
+
             if ($result->num_rows > 0) {
                 $row = $result->fetch_assoc();
                 $current_token = $row['current_token'];
             }
-            
+
             $stmt->close();
+        } else {
+            throw new Exception("Failed to prepare database statement");
         }
-        
+
         $conn->close();
     } catch (Exception $e) {
         error_log("Error fetching token in admin panel: " . $e->getMessage());
-        $db_error = "Gagal mengambil token dari database";
+        $db_error = "Gagal mengambil token dari database. Error: " . $e->getMessage();
     }
 }
 ?>
