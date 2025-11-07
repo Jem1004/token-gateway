@@ -44,18 +44,18 @@ try {
 
     // Test membuat token baru
     echo "<h3>Testing Generate Token:</h3>";
-    function generateRandomToken($length = 8) {
-        $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    function generateRandomToken($length = 6) {
+        $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
         $charactersLength = strlen($characters);
         $randomString = '';
         for ($i = 0; $i < $length; $i++) {
-            $randomString .= $characters[rand(0, $charactersLength - 1)];
+            $randomString .= $characters[random_int(0, $charactersLength - 1)];
         }
         return $randomString;
     }
 
-    $test_token = generateRandomToken();
-    echo "<p style='color: blue;'>Token generated: <strong>" . $test_token . "</strong></p>";
+    $test_token = generateRandomToken(6);
+    echo "<p style='color: blue;'>Token generated (6 huruf): <strong>" . $test_token . "</strong></p>";
 
 } catch (PDOException $e) {
     echo "<p style='color: red; font-weight: bold;'>✗ Error koneksi database:</p>";

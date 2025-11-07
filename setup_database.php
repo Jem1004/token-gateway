@@ -124,18 +124,18 @@ echo "<h2>Step 3: Test Fungsi Aplikasi</h2>";
 
 try {
     // Test generate token
-    function generateRandomToken($length = 8) {
-        $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    function generateRandomToken($length = 6) {
+        $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
         $charactersLength = strlen($characters);
         $randomString = '';
         for ($i = 0; $i < $length; $i++) {
-            $randomString .= $characters[rand(0, $charactersLength - 1)];
+            $randomString .= $characters[random_int(0, $charactersLength - 1)];
         }
         return $randomString;
     }
 
-    $test_token = generateRandomToken();
-    echo "<div class='info'>🔑 Test generate token: <strong>" . $test_token . "</strong></div>";
+    $test_token = generateRandomToken(6);
+    echo "<div class='info'>🔑 Test generate token (6 huruf): <strong>" . $test_token . "</strong></div>";
 
     // Test update token
     $stmt = $pdo->prepare("UPDATE app_config SET current_token = :token WHERE id = 1");

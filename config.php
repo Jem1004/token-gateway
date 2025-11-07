@@ -15,10 +15,12 @@ try {
 }
 
 // Konfigurasi Aplikasi
-define('EXAM_URL', 'http://www.xxxxx.sch.id');
-define('TOKEN_ROTATION_MINUTES', 10); // Interval rotasi dalam menit
+define('EXAM_URL', 'https://pribadi.smpn3ppu.sch.id/heisiswasmpn3kamuharusjujurdalamujian/public/login/index.php');
+define('TOKEN_ROTATION_MINUTES', 15); // Interval rotasi dalam menit
+define('TOKEN_LENGTH', 6); // Panjang token (6 huruf alphabet)
+define('TOKEN_PATTERN', '[A-Z]{6}'); // Pattern untuk validation
 
 // Konfigurasi Admin (Username dan Password)
-define('ADMIN_USERNAME', 'admin');
-define('ADMIN_PASSWORD', 'admin123');
+define('ADMIN_USERNAME', 'ADMIN');
+define('ADMIN_PASSWORD', 'ADMIN12345');
 ?>
