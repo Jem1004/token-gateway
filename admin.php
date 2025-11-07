@@ -123,17 +123,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && htmlspec
                 date('d M Y H:i:s', strtotime($result['next_rotation'])) :
                 'Tidak diketahui';
 
-        $_SESSION['rotation_message'] = sprintf(
-            "Token berhasil diperbarui. Token baru: <strong>%s</strong><br>Rotasi berikutnya: <strong>%s</strong>",
-            htmlspecialchars($result['token'], ENT_QUOTES, 'UTF-8'),
-            $nextRotation
-        );
-    } else {
-        // Don't expose detailed error messages to prevent information disclosure
-        $_SESSION['rotation_error'] = "Gagal memperbarui token. Silakan coba lagi.";
-        // Log detailed error for debugging
-        error_log("Token rotation failed: " . ($result['message'] ?? 'Unknown error'));
-    }
+            $_SESSION['rotation_message'] = sprintf(
+                "Token berhasil diperbarui. Token baru: <strong>%s</strong><br>Rotasi berikutnya: <strong>%s</strong>",
+                htmlspecialchars($result['token'], ENT_QUOTES, 'UTF-8'),
+                $nextRotation
+            );
+        } else {
+            // Don't expose detailed error messages to prevent information disclosure
+            $_SESSION['rotation_error'] = "Gagal memperbarui token. Silakan coba lagi.";
+            // Log detailed error for debugging
+            error_log("Token rotation failed: " . ($result['message'] ?? 'Unknown error'));
+        }
 
     // Redirect to prevent form resubmission
     header("Location: admin.php");
@@ -201,7 +201,9 @@ if ($is_authenticated) {
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <?php if (file_exists('token_countdown.js')): ?>
     <script src="token_countdown.js" defer></script>
+    <?php endif; ?>
 </head>
 <body>
     <div class="container container--admin">
