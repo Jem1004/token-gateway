@@ -395,21 +395,23 @@ function getTokenInfo(): array {
     }
 }
 
-// Execute token rotation when script is run directly
-if (php_sapi_name() === 'cli' || !isset($_SERVER['HTTP_HOST'])) {
-    // CLI execution
-    $result = rotateToken();
-    echo $result['message'] . "\n";
-    exit($result['success'] ? 0 : 1);
-} else {
-    // Web execution (called from admin panel)
-    $result = rotateToken();
-    
-    // Output JSON for AJAX requests or plain text for direct access
-    if (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) {
-        header('Content-Type: application/json');
-        echo json_encode($result);
+// Execute token rotation when script is run directly (not when included)
+if (basename(__FILE__) === basename($_SERVER['SCRIPT_NAME'])) {
+    if (php_sapi_name() === 'cli' || !isset($_SERVER['HTTP_HOST'])) {
+        // CLI execution
+        $result = rotateToken();
+        echo $result['message'] . "\n";
+        exit($result['success'] ? 0 : 1);
     } else {
-        echo $result['message'];
+        // Web execution (direct access, not included)
+        $result = rotateToken();
+
+        // Output JSON for AJAX requests or plain text for direct access
+        if (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) {
+            header('Content-Type: application/json');
+            echo json_encode($result);
+        } else {
+            echo $result['message'];
+        }
     }
 }

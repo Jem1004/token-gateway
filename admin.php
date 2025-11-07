@@ -93,6 +93,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && htmlspec
 
     // Execute token rotation logic
     try {
+        // Include rotate_token.php without executing it directly
+        if (!file_exists('rotate_token.php')) {
+            throw new Exception("rotate_token.php file not found");
+        }
         require_once 'rotate_token.php';
 
         // Check if rotateToken function exists
