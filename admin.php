@@ -1,195 +1,107 @@
 <?php
-/**
- * Token Gate Application - Admin Panel
- *
- * This script provides an administrative interface for managing access tokens.
- * Features include:
- * - Session-based authentication with hardcoded credentials
- * - Display current active token
- * - Manual token rotation capability
- * - Logout functionality
- */
+require_once 'config.php';
 
-// Enable error reporting for debugging
-error_reporting(E_ALL);
-ini_set('display_errors', 0); // Keep display_errors off for security
-ini_set('log_errors', 1);
+// Session untuk login
+session_start();
 
-// Start session for authentication management
-if (session_status() === PHP_SESSION_NONE) {
-    if (!session_start()) {
-        error_log("Failed to start session in admin.php");
-        die("Session error: Unable to start session");
-    }
-}
-
-// Include configuration file
-try {
-    if (!file_exists('config.php')) {
-        throw new Exception("config.php file not found");
-    }
-    require_once 'config.php';
-} catch (Exception $e) {
-    error_log("Configuration error in admin.php: " . $e->getMessage());
-    die("Configuration error: System configuration issue detected");
-}
-
-// Check if required functions exist
-if (!function_exists('getDbConnection')) {
-    error_log("getDbConnection function not available in admin.php");
-    die("System error: Database function not available");
-}
-
-// Hardcoded admin credentials (as per requirements)
-// In production, these should be hashed and stored securely
-define('ADMIN_USERNAME', 'admin');
-define('ADMIN_PASSWORD', 'indonesia2025');
-
-// Handle logout action
-if (isset($_GET['action']) && htmlspecialchars($_GET['action'], ENT_QUOTES, 'UTF-8') === 'logout') {
-    // Destroy session and redirect to login
-    session_unset();
+// Proses logout
+if (isset($_GET['logout'])) {
     session_destroy();
-    header("Location: admin.php");
-    exit();
+    header('Location: admin.php');
+    exit;
 }
 
-// Handle login POST request
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'login') {
-    // Sanitize input
-    $username = htmlspecialchars(trim($_POST['username'] ?? ''), ENT_QUOTES, 'UTF-8');
-    $password = trim($_POST['password'] ?? '');
-    
-    // Validate that username and password are not empty
-    if (empty($username) || empty($password)) {
-        $login_error = "Username dan password harus diisi";
+// Proses login
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $username = $_POST['username'] ?? '';
+    $password = $_POST['password'] ?? '';
+
+    if ($username === ADMIN_USERNAME && $password === ADMIN_PASSWORD) {
+        $_SESSION['logged_in'] = true;
+        $_SESSION['login_time'] = time();
     } else {
-        // Verify credentials against hardcoded values
-        if ($username === ADMIN_USERNAME && $password === ADMIN_PASSWORD) {
-            // Regenerate session ID to prevent session fixation attacks
-            session_regenerate_id(true);
-            
-            // Set session variable on successful authentication
-            $_SESSION['admin_authenticated'] = true;
-            $_SESSION['admin_username'] = $username;
-            
-            // Redirect to admin panel to prevent form resubmission
-            header("Location: admin.php");
-            exit();
-        } else {
-            // Set error message for invalid credentials (generic message to prevent user enumeration)
-            $login_error = "Username atau password salah";
-        }
+        $login_error = 'Username atau password salah!';
     }
 }
 
-// Handle manual token rotation
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && htmlspecialchars($_POST['action'], ENT_QUOTES, 'UTF-8') === 'rotate_token') {
-    // Check authentication before allowing token rotation
-    if (!isset($_SESSION['admin_authenticated']) || $_SESSION['admin_authenticated'] !== true) {
-        header("Location: admin.php");
-        exit();
+// Cek apakah sudah login
+if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+    // Tampilkan halaman login
+    ?>
+    <!DOCTYPE html>
+    <html lang="id">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Admin Login - Token Gate</title>
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <div class="container">
+            <div class="login-card admin-login">
+                <div class="header">
+                    <h1>Admin Panel</h1>
+                    <p>Login untuk mengakses panel admin</p>
+                </div>
+
+                <?php if (isset($login_error)): ?>
+                    <div class="error-message">
+                        <?php echo htmlspecialchars($login_error); ?>
+                    </div>
+                <?php endif; ?>
+
+                <form method="POST" class="token-form">
+                    <div class="form-group">
+                        <label for="username">Username:</label>
+                        <input type="text" id="username" name="username" required autofocus>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password:</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <button type="submit" class="submit-btn">
+                        Login
+                    </button>
+                </form>
+            </div>
+        </div>
+    </body>
+    </html>
+    <?php
+    exit;
+}
+
+// Jika sudah login, tampilkan panel admin
+try {
+    // Ambil data token dari database
+    $stmt = $pdo->prepare("SELECT current_token, last_rotated FROM app_config WHERE id = 1");
+    $stmt->execute();
+    $result = $stmt->fetch();
+
+    if (!$result) {
+        $current_token = 'ERROR';
+        $last_rotated = 'N/A';
+    } else {
+        $current_token = htmlspecialchars($result['current_token']);
+        $last_rotated = $result['last_rotated'];
     }
 
-    // Execute token rotation logic
-    try {
-        // Include rotate_token.php without executing it directly
-        if (!file_exists('rotate_token.php')) {
-            throw new Exception("rotate_token.php file not found");
-        }
-        require_once 'rotate_token.php';
+    // Hitung sisa detik hingga rotasi berikutnya
+    $lastRotated = new DateTime($last_rotated);
+    $nextRotation = clone $lastRotated;
+    $nextRotation->modify('+' . TOKEN_ROTATION_MINUTES . ' minutes');
 
-        // Check if rotateToken function exists
-        if (!function_exists('rotateToken')) {
-            throw new Exception("Token rotation function not available");
-        }
+    $now = new DateTime();
+    $sisaDetik = $nextRotation->getTimestamp() - $now->getTimestamp();
 
-        // Verify database connection first
-        if (!function_exists('getDbConnection')) {
-            throw new Exception("Database connection function not available");
-        }
-
-        $conn = getDbConnection();
-        if (!$conn) {
-            throw new Exception("Database connection failed");
-        }
-        $conn->close();
-
-        $result = rotateToken('manual', $_SESSION['admin_username']);
-
-        // Store message in session for display after redirect
-        if ($result['success']) {
-            $nextRotation = isset($result['next_rotation']) ?
-                date('d M Y H:i:s', strtotime($result['next_rotation'])) :
-                'Tidak diketahui';
-
-            $_SESSION['rotation_message'] = sprintf(
-                "Token berhasil diperbarui. Token baru: <strong>%s</strong><br>Rotasi berikutnya: <strong>%s</strong>",
-                htmlspecialchars($result['token'], ENT_QUOTES, 'UTF-8'),
-                $nextRotation
-            );
-        } else {
-            // Don't expose detailed error messages to prevent information disclosure
-            $_SESSION['rotation_error'] = "Gagal memperbarui token. Silakan coba lagi.";
-            // Log detailed error for debugging
-            error_log("Token rotation failed: " . ($result['message'] ?? 'Unknown error'));
-        }
-
-    // Redirect to prevent form resubmission
-    header("Location: admin.php");
-    exit();
-}
-
-// Check if user is authenticated
-$is_authenticated = isset($_SESSION['admin_authenticated']) && $_SESSION['admin_authenticated'] === true;
-
-// Retrieve session messages and clear them
-$rotation_message = null;
-$rotation_error = null;
-if (isset($_SESSION['rotation_message'])) {
-    $rotation_message = $_SESSION['rotation_message'];
-    unset($_SESSION['rotation_message']);
-}
-if (isset($_SESSION['rotation_error'])) {
-    $rotation_error = $_SESSION['rotation_error'];
-    unset($_SESSION['rotation_error']);
-}
-
-// If authenticated, fetch current token from database
-$current_token = null;
-if ($is_authenticated) {
-    try {
-        // Check if function exists before calling it
-        if (!function_exists('getDbConnection')) {
-            throw new Exception("Database connection function not available");
-        }
-
-        $conn = getDbConnection();
-        if (!$conn) {
-            throw new Exception("Failed to connect to database");
-        }
-
-        $stmt = $conn->prepare("SELECT current_token FROM active_token WHERE id = 1");
-
-        if ($stmt) {
-            $stmt->execute();
-            $result = $stmt->get_result();
-
-            if ($result->num_rows > 0) {
-                $row = $result->fetch_assoc();
-                $current_token = $row['current_token'];
-            }
-
-            $stmt->close();
-        } else {
-            throw new Exception("Failed to prepare database statement");
-        }
-
-        $conn->close();
-    } catch (Exception $e) {
-        error_log("Error fetching token in admin panel: " . $e->getMessage());
-        $db_error = "Gagal mengambil token dari database. Error: " . $e->getMessage();
+    if ($sisaDetik < 0) {
+        $sisaDetik = 0; // Jika cron terlambat
     }
+
+} catch (PDOException $e) {
+    $current_token = 'DB ERROR';
+    $last_rotated = 'N/A';
+    $sisaDetik = 0;
 }
 ?>
 <!DOCTYPE html>
@@ -199,236 +111,133 @@ if ($is_authenticated) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - Token Gate</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <?php if (file_exists('token_countdown.js')): ?>
-    <script src="token_countdown.js" defer></script>
-    <?php endif; ?>
 </head>
 <body>
-    <div class="container container--admin">
-        <?php if (!$is_authenticated): ?>
-            <!-- Login Form -->
-            <div class="text-center">
-                <div style="font-size: 4rem; margin-bottom: 1rem; color: var(--green-600);">🔐</div>
-                <h1>Admin Panel</h1>
-                <p class="text-muted">Silakan login untuk mengakses panel administrasi</p>
-            </div>
-
-            <?php if (isset($login_error)): ?>
-                <div class="message message-error">
-                    <?php echo $login_error; ?>
-                </div>
-            <?php endif; ?>
-
-            <form method="POST" action="admin.php">
-                <input type="hidden" name="action" value="login">
-
-                <div class="form-group">
-                    <label for="username">
-                        <span style="margin-right: 0.5rem;">👤</span>
-                        Username
-                    </label>
-                    <input
-                        type="text"
-                        id="username"
-                        name="username"
-                        required
-                        placeholder="Masukkan username admin"
-                        autocomplete="username"
-                        maxlength="50"
-                    >
-                </div>
-
-                <div class="form-group">
-                    <label for="password">
-                        <span style="margin-right: 0.5rem;">🔒</span>
-                        Password
-                    </label>
-                    <input
-                        type="password"
-                        id="password"
-                        name="password"
-                        required
-                        placeholder="Masukkan password admin"
-                        autocomplete="current-password"
-                    >
-                </div>
-
-                <button type="submit" class="btn">
-                    <span style="margin-right: 0.5rem;">🚀</span>
-                    Login ke Dashboard
-                </button>
-            </form>
-        <?php else: ?>
-            <!-- Admin Dashboard -->
+    <div class="container">
+        <div class="admin-panel">
             <div class="admin-header">
-                <div>
-                    <h1>🛡️ Admin Dashboard</h1>
-                    <div class="user-info">
-                        Selamat datang kembali, <strong><?php echo htmlspecialchars($_SESSION['admin_username']); ?></strong>!
-                    </div>
-                </div>
-                <a href="admin.php?action=logout" class="logout-btn">Keluar</a>
+                <h1>Admin Panel - Token Gate</h1>
+                <a href="?logout=1" class="logout-btn">Logout</a>
             </div>
 
-            <!-- Dashboard Statistics -->
-            <div class="admin-stats">
-                <div class="stat-card">
-                    <div class="stat-value">🔑</div>
-                    <div class="stat-label">Token Management</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">✅</div>
-                    <div class="stat-label">System Active</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">📊</div>
-                    <div class="stat-label">Real-time Status</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">🔒</div>
-                    <div class="stat-label">Security Enabled</div>
+            <div class="token-info">
+                <h2>Token Aktif Saat Ini:</h2>
+                <h1 id="active-token"><?php echo $current_token; ?></h1>
+
+                <h3>Token akan berganti dalam:</h3>
+                <h2 id="countdown-timer">--:--</h2>
+
+                <div class="rotation-info">
+                    <p><strong>Interval Rotasi:</strong> <?php echo TOKEN_ROTATION_MINUTES; ?> menit</p>
+                    <p><strong>Terakhir Dirotasi:</strong> <?php echo date('d-m-Y H:i:s', strtotime($last_rotated)); ?></p>
                 </div>
             </div>
 
-            <?php if ($rotation_message): ?>
-                <div class="message message-success success-animation">
-                    <?php echo $rotation_message; ?>
-                </div>
-            <?php endif; ?>
-
-            <?php if ($rotation_error): ?>
-                <div class="message message-error">
-                    <?php echo $rotation_error; ?>
-                </div>
-            <?php endif; ?>
-
-            <?php if (isset($db_error)): ?>
-                <div class="message message-error">
-                    <?php echo $db_error; ?>
-                </div>
-            <?php endif; ?>
-
-            <!-- Countdown Timer Section -->
-            <div class="countdown-container" id="countdownContainer">
-                <div class="countdown-header">
-                    <div class="countdown-title">
-                        <span style="font-size: 1.5rem;">⏱️</span>
-                        Countdown Token Rotation
-                    </div>
-                    <div class="countdown-status countdown-status--active" id="countdownStatus">
-                        Aktif
-                    </div>
-                </div>
-
-                <div class="countdown-display">
-                    <div class="countdown-item">
-                        <div class="countdown-value" id="countdown-days">00</div>
-                        <div class="countdown-label">Hari</div>
-                    </div>
-                    <div class="countdown-item">
-                        <div class="countdown-value" id="countdown-hours">00</div>
-                        <div class="countdown-label">Jam</div>
-                    </div>
-                    <div class="countdown-item">
-                        <div class="countdown-value" id="countdown-minutes">00</div>
-                        <div class="countdown-label">Menit</div>
-                    </div>
-                    <div class="countdown-item">
-                        <div class="countdown-value" id="countdown-seconds">00</div>
-                        <div class="countdown-label">Detik</div>
-                    </div>
-                </div>
-
-                <div class="countdown-progress">
-                    <div class="countdown-progress-bar" id="countdownProgress" style="width: 100%;"></div>
-                </div>
-
-                <div class="countdown-info">
-                    <div class="countdown-info-item">
-                        <span class="countdown-info-label">🔄 Rotasi Terakhir:</span>
-                        <span class="countdown-info-value" id="lastRotationTime">Memuat...</span>
-                    </div>
-                    <div class="countdown-info-item">
-                        <span class="countdown-info-label">⏰ Rotasi Berikutnya:</span>
-                        <span class="countdown-info-value" id="nextRotationTime">Memuat...</span>
-                    </div>
-                    <div class="countdown-info-item">
-                        <span class="countdown-info-label">📊 Interval Rotasi:</span>
-                        <span class="countdown-info-value" id="rotationInterval">Memuat...</span>
-                    </div>
-                    <div class="countdown-info-item">
-                        <span class="countdown-info-label">🤖 Auto-Rotation:</span>
-                        <span class="countdown-info-value" id="autoRotationStatus">Memuat...</span>
-                    </div>
-                </div>
-
-                <div class="message message-error" id="countdownError" style="display: none;"></div>
-
-                <div style="text-align: center; margin-top: 1rem;">
-                    <button type="button" id="refreshTokenBtn" class="btn btn--secondary btn--sm">
-                        🔄 Refresh Data
-                    </button>
-                </div>
+            <div class="admin-actions">
+                <button onclick="rotateTokenNow()" class="action-btn">Rotasi Token Sekarang</button>
+                <button onclick="copyToken()" class="action-btn copy-btn">Salin Token</button>
             </div>
 
-            <div class="admin-section token-display">
-                <h2>
-                    <span style="margin-right: 0.5rem;">🔑</span>
-                    Token Aktif Saat Ini
-                </h2>
-                <?php if ($current_token): ?>
-                    <div class="current-token" id="currentToken">
-                        <?php echo htmlspecialchars($current_token); ?>
-                    </div>
-                    <p class="text-muted" style="margin-top: 1rem; font-size: 0.875rem;">
-                        ⚠️ Token ini sedang aktif dan dapat digunakan oleh siswa untuk mengakses ujian.
-                    </p>
-                <?php else: ?>
-                    <div class="message message-error">
-                        Token tidak ditemukan dalam database. Silakan buat token baru.
-                    </div>
-                <?php endif; ?>
-            </div>
-
-            <div class="admin-section token-actions">
-                <h2>
-                    <span style="margin-right: 0.5rem;">⚙️</span>
-                    Manajemen Token
-                </h2>
-                <form method="POST" action="admin.php">
-                    <input type="hidden" name="action" value="rotate_token">
-                    <button type="submit" class="btn btn-rotate btn--lg">
-                        Buat Token Baru (Manual)
-                    </button>
-                </form>
-                <p class="text-muted" style="margin-top: 1rem; font-size: 0.875rem;">
-                    💡 Membuat token baru akan secara otomatis menonaktifkan token sebelumnya.
-                </p>
-            </div>
-
-            <div class="admin-section">
-                <h2>
-                    <span style="margin-right: 0.5rem;">📋</span>
-                    Quick Actions
-                </h2>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-                    <button class="btn btn--secondary btn--sm" disabled>
-                        📈 View Statistics
-                    </button>
-                    <button class="btn btn--secondary btn--sm" disabled>
-                        🕐 View History
-                    </button>
-                    <button class="btn btn--secondary btn--sm" disabled>
-                        ⚙️ Settings
-                    </button>
-                </div>
-                <p class="text-muted" style="margin-top: 1rem; font-size: 0.875rem;">
-                    Fitur tambahan akan segera hadir untuk monitoring dan analisis yang lebih lengkap.
-                </p>
-            </div>
-        <?php endif; ?>
+            <div id="notification" class="notification"></div>
+        </div>
     </div>
+
+    <script>
+        // Variabel dari PHP
+        let sisaDetik = <?php echo $sisaDetik; ?>;
+        const rotationMinutes = <?php echo TOKEN_ROTATION_MINUTES; ?>;
+
+        // Fungsi format waktu MM:SS
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Update countdown timer
+        function updateCountdown() {
+            const timerElement = document.getElementById('countdown-timer');
+
+            if (sisaDetik > 0) {
+                timerElement.textContent = formatTime(sisaDetik);
+                sisaDetik--;
+            } else {
+                timerElement.textContent = '00:00';
+                fetchNewToken();
+                // Reset timer ke periode berikutnya
+                sisaDetik = (rotationMinutes * 60) - 1;
+            }
+        }
+
+        // Fetch token baru via AJAX
+        function fetchNewToken() {
+            fetch('get_new_token.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        showNotification('Error: ' + data.error, 'error');
+                    } else {
+                        const tokenElement = document.getElementById('active-token');
+                        tokenElement.textContent = data.token;
+                        showNotification('Token berhasil diperbarui!', 'success');
+
+                        // Update info waktu rotasi terakhir
+                        const lastRotatedElement = document.querySelector('.rotation-info p:last-child');
+                        const rotatedTime = new Date(data.last_rotated);
+                        lastRotatedElement.innerHTML = `<strong>Terakhir Dirotasi:</strong> ${rotatedTime.toLocaleString('id-ID')}`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('Gagal mengambil token baru', 'error');
+                });
+        }
+
+        // Rotasi token manual
+        function rotateTokenNow() {
+            if (confirm('Apakah Anda yakin ingin merotasi token sekarang?')) {
+                // Panggil rotate_token.php via AJAX
+                fetch('rotate_token.php')
+                    .then(response => response.text())
+                    .then(() => {
+                        fetchNewToken();
+                        // Reset timer
+                        sisaDetik = (rotationMinutes * 60) - 1;
+                        showNotification('Token berhasil dirotasi manual!', 'success');
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showNotification('Gagal merotasi token', 'error');
+                    });
+            }
+        }
+
+        // Copy token to clipboard
+        function copyToken() {
+            const token = document.getElementById('active-token').textContent;
+            navigator.clipboard.writeText(token).then(() => {
+                showNotification('Token berhasil disalin!', 'success');
+            }).catch(err => {
+                console.error('Error copying token:', err);
+                showNotification('Gagal menyalin token', 'error');
+            });
+        }
+
+        // Show notification
+        function showNotification(message, type) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = 'notification ' + type;
+            notification.style.display = 'block';
+
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+
+        // Start countdown
+        setInterval(updateCountdown, 1000);
+        updateCountdown(); // Initial call
+    </script>
 </body>
 </html>
