@@ -17,7 +17,9 @@ try {
     // Kirim token dan waktu rotasi terakhir
     echo json_encode([
         'token' => $result['current_token'],
-        'last_rotated' => $result['last_rotated']
+        'last_rotated' => $result['last_rotated'],
+        'timezone' => APP_TIMEZONE,
+        'server_time' => date(SERVER_TIME_FORMAT)
     ]);
 
 } catch (PDOException $e) {

@@ -18,7 +18,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     if ($username === ADMIN_USERNAME && $password === ADMIN_PASSWORD) {
         $_SESSION['logged_in'] = true;
-        $_SESSION['login_time'] = time();
+        $_SESSION['login_time'] = time(); // Unix timestamp
+        $_SESSION['login_time_formatted'] = date(SERVER_TIME_FORMAT); // Formatted server time
     } else {
         $login_error = 'Username atau password salah!';
     }
@@ -231,7 +232,7 @@ try {
                 </div>
                 <div class="header-actions">
                     <span class="session-time">
-                        🕐 Login: <?php echo date('H:i', $_SESSION['login_time']); ?>
+                        🕐 Login: <?php echo date(TIME_FORMAT_SHORT, $_SESSION['login_time']); ?> (<?php echo APP_TIMEZONE; ?>)
                     </span>
                     <a href="?logout=1" class="logout-btn">
                         🚪 Logout
@@ -291,7 +292,7 @@ try {
                         </div>
                         <div class="info-item">
                             <span class="info-label">📅 Terakhir Dirotasi</span>
-                            <span class="info-value"><?php echo date('d M Y, H:i:s', strtotime($last_rotated)); ?></span>
+                            <span class="info-value"><?php echo date(DISPLAY_TIME_FORMAT, strtotime($last_rotated)); ?></span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">📅 Rotasi Berikutnya</span>
@@ -299,7 +300,7 @@ try {
                                 <?php
                                 $nextRot = new DateTime($last_rotated);
                                 $nextRot->modify('+' . TOKEN_ROTATION_MINUTES . ' minutes');
-                                echo date('d M Y, H:i:s', $nextRot->getTimestamp());
+                                echo date(DISPLAY_TIME_FORMAT, $nextRot->getTimestamp());
                                 ?>
                             </span>
                         </div>
@@ -374,7 +375,8 @@ try {
         // Variabel dari PHP
         let sisaDetik = <?php echo $sisaDetik; ?>;
         const rotationMinutes = <?php echo TOKEN_ROTATION_MINUTES; ?>;
-        const totalSeconds = rotationMinutes * 60;
+        const totalSeconds = rotationMinutes * <?php echo SECONDS_PER_MINUTE; ?>;
+        const serverTimezone = '<?php echo APP_TIMEZONE; ?>';
 
         // Fungsi format waktu MM:SS
         function formatTime(seconds) {
@@ -483,6 +485,7 @@ try {
                     if (data.success) {
                         // Update token directly from response
                         const tokenElement = document.getElementById('active-token');
+                        const oldToken = tokenElement.textContent;
                         tokenElement.textContent = data.token;
                         tokenElement.classList.add('success-animation');
                         setTimeout(() => tokenElement.classList.remove('success-animation'), 600);
@@ -512,11 +515,31 @@ try {
                         // Reset countdown
                         sisaDetik = totalSeconds - 1;
 
-                        showNotification('✅ Token berhasil dirotasi manual!', 'success');
-                        console.log('Token rotated to:', data.token);
+                        // Show detailed success message
+                        console.log('Token rotation successful:', {
+                            oldToken: oldToken,
+                            newToken: data.token,
+                            timestamp: data.timestamp,
+                            last_rotated: data.last_rotated
+                        });
+
+                        showNotification('✅ Token berhasil dirotasi: ' + data.token, 'success');
+
+                        // Verify the token actually changed
+                        if (oldToken !== data.token) {
+                            console.log('✅ Token verified: Changed from ' + oldToken + ' to ' + data.token);
+                        } else {
+                            console.warn('⚠️ Token appears unchanged, this might indicate a database issue');
+                            showNotification('⚠️ Token dirotasi tapi nilai sama, periksa database', 'warning');
+                        }
+
                     } else {
+                        // Enhanced error reporting
+                        console.error('Token rotation failed:', data);
                         showNotification('❌ Gagal merotasi token: ' + (data.error || 'Unknown error'), 'error');
-                        console.error('Rotation failed:', data);
+
+                        // Try to refresh token from server anyway
+                        fetchNewToken();
                     }
                 })
                 .catch(error => {
@@ -860,6 +883,12 @@ try {
 
             .token-success { color: #10b981 !important; }
             .token-error { color: #ef4444 !important; }
+
+            .notification.warning {
+                background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%);
+                color: #d97706;
+                border: 1px solid #fbbf24;
+            }
 
             @media (max-width: 640px) {
                 .header-actions {
